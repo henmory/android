@@ -1,0 +1,31 @@
+＃栈中引用：
+1.looper=====>Lopper
+2.handler=====>Handler
+3.message=====>Message
+4.queuqe=====>MessageQueue
+
+
+＃堆中对象
+1.looper:
+    thread：指向当前线程的对象
+    queue： 指向线程的消息队列
+    
+2.handler:
+    looper:指向当前线程（定义handler的线程）的looper
+    queue:从looper中找到
+
+3.queue:
+    message:消息队列，采用链表形式
+
+4.message:
+    target: 指向发送message的handler
+    
+＃解释：目前实例以主线程为例：
+  1.主线程创建完成之后，创建looper＝＝＝＝》创建的具体过程以后再写
+  2.looper调用loop方法，循环queue
+  3.handler调用sendMessage方法发送message到queue，同时设置message的target为自己，这样在处理消息时由handler自己处理
+  4.queue通过next方法拿到下一个message
+  5.message调用message.target.dispatch方法处理消息，实际上是由handler分发，设置的时候在步骤3里面
+ 
+
+  
