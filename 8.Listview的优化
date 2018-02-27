@@ -1,0 +1,20 @@
+1.由上一篇我们可知，对于每一个ItemView， ListView都会调用Adapter的getView方法，返回一个抽象的View
+
+2.在这个方法的第二个参数convertView是从mRecycler中复用的,经过测试发现，如果item的数量没有沾满全屏，那么每次都会加载convertView，并缓存到mRecycler，
+
+这个数量决定于屏幕上能够显示的item数量，加载convertView的数量＝屏幕上能够显示的item数量 ＋ 1. 这应该是mRecycler机制详解，以后继续学习
+
+3.因而， 当我们的item数量足够大的时候，不能无限制加载convertView，这样会内存泄漏，采用的机制就是mRecycler的复用
+
+4.所以我们调用getView的时候，我们判断convertView是否为空，如果不是表明mRecycler中有复用的，直接用即可，如果没有，那我们需要创建
+
+5.为了更好的使用，通常是new一个viewHolder
+
+6.每一个convertView即item view， 都有一个viewholder与之对应，为了建立这种关系，我们在发现convertView为null时，创建一个viewHolder，并设置
+
+convertView的tag为viewHolder。这样当我们下次判断convertView不为空的时候，从convertView.getTag就可以获取到viewHolder，进而通过viewHolder对
+
+控件进行设置
+
+7.因为viewholder中存放有布局文件convertView，以及所有的控件
+  
