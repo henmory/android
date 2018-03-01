@@ -296,14 +296,8 @@ static {
 
 1.静态的线程池，表示类加载到内存线程池就有了，也就是说，一个进程内所有使用AsyncTask的地方，共用一个线程池
 
-2.由SerialExecutor的execute方法可知，它是一个synchronized函数，当我们用AsyncTask添加多个任务时，它是一个任务一个任务的放到等待队列中，
+2.由SerialExecutor的execute方法可知，它是一个synchronized函数，当我们用AsyncTask添加多个任务时，它是一个任务一个任务的放到等待队列中，每放一个，判断线程池中是否有active的线程，如果有就不让线程池执行下一个任务，当线程池中的线程执行完这个任务后，会自动从等待队列中获取任务执行。这就说明，线
+程池中，是只有一个线程在执行任务
 
-每放一个，判断线程池中是否有active的线程，如果有就不让线程池执行下一个任务，当线程池中的线程执行完这个任务后，会自动从等待队列中获取任务执行。这就说
-
-明，线程池中，是只有一个线程在执行任务
-
-3.因而如果想采用多线程并发处理任务，我们需要调用 public final AsyncTask<Params, Progress, Result> executeOnExecutor(Executor 
-
-exec,Params... params) 这个接口，并给exec赋值为THREAD_POOL_EXECUTOR。这样每当我妈调用这个接口的时候，THREAD_POOL_EXECUTOR就给我们从线程
-
+3.因而如果想采用多线程并发处理任务，我们需要调用 public final AsyncTask<Params, Progress, Result> executeOnExecutor(Executor exec,Params... params) 这个接口，并给exec赋值为THREAD_POOL_EXECUTOR。这样每当我妈调用这个接口的时候，THREAD_POOL_EXECUTOR就给我们从线程
 池创建一个线程执行任务，而不再需要SerialExecutor判断线程池中是否有active的线程，来了任务就开辟线程执行
