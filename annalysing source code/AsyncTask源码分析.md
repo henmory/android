@@ -45,78 +45,80 @@
 12.	exec==> sDefaultExecutor===>SerialExecutor（其实也是一个普通的类，运行在主线程中）
 
 	private static class SerialExecutor implements Executor {
-        
-	  final ArrayDeque<Runnable> mTasks = new ArrayDeque<Runnable>();//任务的等待队列
-          
-    Runnable mActive;//线程池中是否有活跃的线程
 
-    public synchronized void execute(final Runnable r) { //执行任务
+		final ArrayDeque<Runnable> mTasks = new ArrayDeque<Runnable>();//任务的等待队列
 
-      mTasks.offer(Runnable()); //等待队列添加任务
+		Runnable mActive;//线程池中是否有活跃的线程
 
-      if (mActive == null) {  //没有活跃的线程
+		public synchronized void execute(final Runnable r) { //执行任务
 
-              scheduleNext();//执行下一个任务
-      }
-      
-    }
+			mTasks.offer(Runnable()); //等待队列添加任务
 
-  protected synchronized void scheduleNext() {
+			if (mActive == null) {  //没有活跃的线程
 
-    if ((mActive = mTasks.poll()) != null) {//取出一个将要执行的线程
+			scheduleNext();//执行下一个任务
 
-    THREAD_POOL_EXECUTOR.execute(mActive); //线程池执行任务
+			}
+		
+		}
 
-      }
-      
-    }
+		protected synchronized void scheduleNext() {
 
-  }
+			if ((mActive = mTasks.poll()) != null) {//取出一个将要执行的线程
+
+			THREAD_POOL_EXECUTOR.execute(mActive); //线程池执行任务
+
+			}
+
+		}
+
+	}
     
 13.此时，主线程任务结束，进入到子线程中
 	
-  public void run() {  
-    
-    r.run(); //r 是 mFuture
-    
-    scheduleNext(); //执行等待队列中的下一个任务
-  
-  }
+	public void run() {  
+
+		r.run(); //r 是 mFuture
+
+		scheduleNext(); //执行等待队列中的下一个任务
+
+	}
   
 13. r.run()====>FutureTask.run()
 
-public void run() {
+	public void run() {
 
-  result = c.call(); //执行mWorker的call
-}
+		result = c.call(); //执行mWorker的call
+	
+	}
 
 14. WorkerRunable.call()
 
-public Result call() throws Exception {
-  
-  mTaskInvoked.set(true);//任务已经开始调起
-  
-  Result result = null;
-  
-  try {
+	public Result call() throws Exception {
 
-    result = doInBackground(mParams);//开始执行费时任务
-         
-  } catch (Throwable tr) {
-      
-      mCancelled.set(true);
-      
-      throw tr;
-  
-  } finally {
-      
-      postResult(result); //结果执行完，返回值
-  
-  }
-  
-  return result;
-  
-  }
+		mTaskInvoked.set(true);//任务已经开始调起
+
+		Result result = null;
+
+		try {
+
+			result = doInBackground(mParams);//开始执行费时任务
+
+		} catch (Throwable tr) {
+
+			mCancelled.set(true);
+
+			throw tr;
+
+		} finally {
+
+			postResult(result); //结果执行完，返回值
+
+		}
+
+			return result;
+
+	}
 
 15.private Result postResult(Result result) {
     
