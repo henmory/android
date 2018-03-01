@@ -4,7 +4,7 @@
 
   2.new AsyncTask子类对象
 
-  3.调用子类的execute(params)，方法开启同步线程
+  3.调用子类的execute(params)，方法开启异步线程
 
 # AsyncTask代码流程
 
@@ -12,7 +12,9 @@
 
   2.AsyncTask内部有个sHandler，它是一个静态的，这就意味着，sHandler是在主线程中声明，进而可以利用它把消息发送到主线程的消息队列中。
 
-  3.sHandler的赋值在AsyncTask的构造函数中，因而在主线程中完成handler的创建以及相应的处理，其实在内部声明了一个mHandler指向sHandler，这就保证每一个AsyncTask子类都可以指向同一块代码（静态代码）＝＝＝》InternalHandler
+  3.sHandler的赋值在AsyncTask的构造函数中，因而在主线程中完成handler的创建以及相应的处理，其实在内部声明了一个mHandler指向sHandler，这就保证
+  
+  每一个AsyncTask子类都可以指向同一块代码（静态代码）＝＝＝》InternalHandler
 
   4.new AsyncTask的时候在其构造函数中，还为mWorker 和 mFuture赋值
 
@@ -175,7 +177,9 @@ result.mTask 就是AsyncTask，调用其finish
 
 }
 
-18.如果用户需要在过程中，知道任务的进度，那么需要在doInBackground函数中，调用publishProgress(Progress... values)，value值用户可以自定义进度（ 运行在子线程中）
+18.如果用户需要在过程中，知道任务的进度，那么需要在doInBackground函数中，调用publishProgress(Progress... values)，value值用户可以自定义进
+
+度（ 运行在子线程中）
 
 19。自线程调用这个函数后，会发现，它会直接通过sHandler发送消息到主线程中
 
@@ -189,7 +193,9 @@ protected final void publishProgress(Progress... values) {
 
 }
 
-20.进而我们可以在InternalHandler的handleMessage函数中的MESSAGE_POST_PROGRESS消息下，写主线程相关逻辑。result.mTask.onProgressUpdate(result.mData); ＝＝＝》因而我们可以重写onProgressUpdate函数，做些有关界面的操作
+20.进而我们可以在InternalHandler的handleMessage函数中的MESSAGE_POST_PROGRESS消息下，写主线程相关逻辑。
+
+result.mTask.onProgressUpdate(result.mData); ＝＝＝》因而我们可以重写onProgressUpdate函数，做些有关界面的操作
 
 # AsyncTask接口说明
 	
@@ -290,8 +296,12 @@ static {
 
 2.由SerialExecutor的execute方法可知，它是一个synchronized函数，当我们用AsyncTask添加多个任务时，它是一个任务一个任务的放到等待队列中，
 
-每放一个，判断线程池中是否有active的线程，如果有就不让线程池执行下一个任务，当线程池中的线程执行完这个任务后，会自动从等待队列中获取任务执行。这就说明，线程池中，是只有一个线程在执行任务
+每放一个，判断线程池中是否有active的线程，如果有就不让线程池执行下一个任务，当线程池中的线程执行完这个任务后，会自动从等待队列中获取任务执行。这就说
 
-3.因而如果想采用多线程并发处理任务，我们需要调用 public final AsyncTask<Params, Progress, Result> executeOnExecutor(Executor exec,Params... params) 这个接口，
+明，线程池中，是只有一个线程在执行任务
 
-并给exec赋值为THREAD_POOL_EXECUTOR。这样每当我妈调用这个接口的时候，THREAD_POOL_EXECUTOR就给我们从线程池创建一个线程执行任务，而不再需要SerialExecutor判断线程池中是否有active的线程，来了任务就开辟线程执行
+3.因而如果想采用多线程并发处理任务，我们需要调用 public final AsyncTask<Params, Progress, Result> executeOnExecutor(Executor 
+
+exec,Params... params) 这个接口，并给exec赋值为THREAD_POOL_EXECUTOR。这样每当我妈调用这个接口的时候，THREAD_POOL_EXECUTOR就给我们从线程
+
+池创建一个线程执行任务，而不再需要SerialExecutor判断线程池中是否有active的线程，来了任务就开辟线程执行
