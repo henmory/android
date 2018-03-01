@@ -4,7 +4,7 @@
 
   2.new AsyncTask子类对象
 
-  3.调用子类的execute(params)，方法开启异步线程
+  3.调用子类的execute(params)，方法开启同步线程
 
 # AsyncTask代码流程
 
