@@ -89,7 +89,7 @@
 	public void run() {
 
 		result = c.call(); //执行mWorker的call
-	
+
 	}
 
 14. WorkerRunable.call()
@@ -226,17 +226,17 @@ result.mTask.onProgressUpdate(result.mData); ＝＝＝》因而我们可以重�
   
 2.public boolean cancel(boolean mayInterruptIfRunning) {
         
-                    Thread t = runner;
-                    
-                    if (t != null)
-                        
-                        t.interrupt();//线程中断
-               
-            finishCompletion(); //完成后续事情
-                
-                return true;
+	Thread t = runner;
+
+	if (t != null)
+
+		t.interrupt();//线程中断
+
+	finishCompletion(); //完成后续事情
+
+	return true;
     
-    }
+}
     
 3.private void finishCompletion() {
     
