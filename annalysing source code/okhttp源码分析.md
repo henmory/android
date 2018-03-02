@@ -45,9 +45,9 @@
           private Response getResponseWithInterceptorChain()；
         }
         
-     2.execute()方法
-     
-        public Response execute() throws IOException {
+     2.execute()方法 ====>所有代码都运行在主线程中，包括数据的返回
+  
+        public Response execute() throws IOException {
 
           //交给Dispatcher执行，这里的executed只是添加到它的一个队列中，详细在后面介绍===>Dispathcer类详解
 
@@ -100,6 +100,10 @@
         
       }
       
+      4.void enqueue(Callback responseCallback);//异步请求 
+      
+      调用dispatcher的异步请求，此时代码仍然在主线程：client.dispatcher().enqueue(new AsyncCall(responseCallback));
+      
       ### 拦截器介绍
       
         1.Interceptor接口:为了观察、修改请求和响应的；典型的做法是修改请求和响应的信息头headers
@@ -144,11 +148,75 @@
   
   ### 方法介绍
   
-  1.同步executed：runningSyncCalls.add(call);//同步执行的时候把call放到runningSyncCalls
+  1.同步executed：runningSyncCalls.add(call);//同步执行的时候把call放到runningSyncCalls，代码运行在主线程
+
+  2.异步enqueue:
+    
+    synchronized void enqueue(AsyncCall call) {
+    
+      if (runningAsyncCalls.size() < maxRequests && runningCallsForHost(call) < maxRequestsPerHost) {
+        
+        runningAsyncCalls.add(call);
+        
+        executorService().execute(call);
+      
+      } else {
+        
+        readyAsyncCalls.add(call);
+      
+      }
+  }
+  
+  
+  所有代码运行在主线程，当运行到executorService().execute(call);时，线程池里面的线程执行call的execute方法
   
-  2.异步enqueue
-  
-  ### 变量介绍
+  @Override protected void execute() {
+      
+      boolean signalledCallback = false;
+      
+      try {
+        
+        Response response = getResponseWithInterceptorChain();
+        
+        if (retryAndFollowUpInterceptor.isCanceled()) {
+          
+          signalledCallback = true;
+          
+          responseCallback.onFailure(RealCall.this, new IOException("Canceled"));
+        
+        } else {
+          
+          signalledCallback = true;
+          
+          responseCallback.onResponse(RealCall.this, response);
+        
+        }
+      
+      } catch (IOException e) {
+        
+        if (signalledCallback) {
+         
+         // Do not signal the callback twice!
+         
+         Platform.get().log(INFO, "Callback failure for " + toLoggableString(), e);
+        
+        } else {
+          
+          responseCallback.onFailure(RealCall.this, e);
+        
+        }
+      
+      } finally {
+        
+        client.dispatcher().finished(this);
+      
+      }
+   
+   }
+   
+   跟同步方法不同的是相同的代码执行在线程池中的线程，当运行完之后，子线程回调我们的接口responseCallback，通常做法，我们应该在主线程声明一个handler，在responseCallback中调用handler发送消息到主线程的消息队列进而更新UI
+   
+  ### 变量介绍
     
     1.executorService; //线程池＝＝只有在异步的时候才会用到，它去执行Realcall，同步的时候把Realcall放到正在运行的同步队列
     
