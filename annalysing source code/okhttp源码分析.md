@@ -214,7 +214,7 @@
    
    }
    
-   跟同步方法不同的是相同的代码执行在线程池中的线程，当运行完之后，子线程回调我们的接口responseCallback，通常做法，我们应该在主线程声明一个handler，在responseCallback中调用handler发送消息到主线程的消息队列进而更新UI
+   跟同步方法不同的是相同的代码执行在线程池中的线程，当运行完之后，子线程回调我们的接口responseCallback，通常做法，我们应该在主线程声明一个handler，在responseCallback中调用handler发送消息到主线程的消息队列进而更新UI。至于是否需要这样做http://www.cnblogs.com/sunshine-anycall/p/5203788.html里面有解释
    
   ### 变量介绍
     
