@@ -27,32 +27,32 @@
   2.主要的拦截器
   
     List<Interceptor> interceptors = new ArrayList<>();
-    
-    interceptors.addAll(client.interceptors());//客户端自己定义的应用层拦截器
-    
-    interceptors.add(retryAndFollowUpInterceptor);//重连重定位拦截器
-  
-    interceptors.add(new BridgeInterceptor(client.cookieJar()));//桥接拦截器
-    
-    interceptors.add(new CacheInterceptor(client.internalCache()));//缓存拦截器
-    
-    interceptors.add(new ConnectInterceptor(client));//链接拦截器
-    
-    if (!retryAndFollowUpInterceptor.isForWebSocket()) {
-      
-      interceptors.addAll(client.networkInterceptors());//客户端自己定义的网络拦截器
-    
-    }
-    
-    interceptors.add(new CallServerInterceptor(retryAndFollowUpInterceptor.isForWebSocket()));//网络链接拦截器
+
+    interceptors.addAll(client.interceptors());//客户端自己定义的应用层拦截器
+
+    interceptors.add(retryAndFollowUpInterceptor);//重连重定位拦截器
+
+    interceptors.add(new BridgeInterceptor(client.cookieJar()));//桥接拦截器
+
+    interceptors.add(new CacheInterceptor(client.internalCache()));//缓存拦截器
+
+    interceptors.add(new ConnectInterceptor(client));//链接拦截器
+
+    if (!retryAndFollowUpInterceptor.isForWebSocket()) {
+
+      interceptors.addAll(client.networkInterceptors());//客户端自己定义的网络拦截器
+
+    }
+
+    interceptors.add(new CallServerInterceptor(retryAndFollowUpInterceptor.isForWebSocket()));//网络链接拦截器
   
 # RetryAndFollowUpInterceptor 重练和重定位拦截器
   
   1.连接失败后重练
   2.连接成功后，需要重新二次定位请求
   
-  @Override public Response intercept(Chain chain) throws IOException {
-    
+  public Response intercept(Chain chain) throws IOException {
+
     Request request = chain.request();
 
     streamAllocation = new StreamAllocation(client.connectionPool(), createAddress(request.url()));//创建streamAllocation
@@ -60,32 +60,32 @@
     while (true) {
 
       try {
-        
+
         response = ((RealInterceptorChain) chain).proceed(request, streamAllocation, null, null);//进行网络
 
       } catch (RouteException e) {
-        
-        continue;//连接失败，继续连接
-        
-      } catch (IOException e) {
-        
+
         continue;//连接失败，继续连接
-     
+
+      } catch (IOException e) {
+
+        continue;//连接失败，继续连接
+
       } 
-     
-     }
 
-      //连接成功，构建重定位处理
- 
-      Request followUp = followUpRequest(response);
+    }
 
-      //没有后续操作，返回结果
-      
-      if (followUp == null) {
-        
-        return response;
-      
-      }
+    //连接成功，构建重定位处理
+
+    Request followUp = followUpRequest(response);
+
+    //没有后续操作，返回结果
+
+    if (followUp == null) {
+
+      return response;
+
+    }
 
   }
 
@@ -123,163 +123,161 @@
   
   1.主要是连接远程服务器，生存HttpStream，建立socket
   
-  HttpStream httpStream = streamAllocation.newStream(client, doExtensiveHealthChecks);//每次请求生成一个HttpStream
+    HttpStream httpStream = streamAllocation.newStream(client, doExtensiveHealthChecks);//每次请求生成一个HttpStream
 
-  RealConnection connection = streamAllocation.connection();＝＝＝》RealConnection//在new Stream时找到connection从连接池中
-  
-  2.public HttpStream newStream(OkHttpClient client, boolean doExtensiveHealthChecks) {
+    RealConnection connection = streamAllocation.connection();＝＝＝》RealConnection//在new Stream时找到connection从连接池中
 
-      try {
+    2.public HttpStream newStream(OkHttpClient client, boolean doExtensiveHealthChecks) {
+
+      RealConnection resultConnection = findHealthyConnection(connectTimeout, readTimeout,
+
+      writeTimeout, connectionRetryEnabled, doExtensiveHealthChecks);//找到可用Connection
+
+      HttpStream resultStream;
+
+      //根据http版本不同创建HttpStream
+
+      if (resultConnection.framedConnection != null) {
+
+        resultStream = new Http2xStream(client, this, resultConnection.framedConnection);
+
+      } else {
+
+        resultStream = new Http1xStream(client, this, resultConnection.source, resultConnection.sink);
       
-        RealConnection resultConnection = findHealthyConnection(connectTimeout, readTimeout,
-            
-            writeTimeout, connectionRetryEnabled, doExtensiveHealthChecks);//找到可用Connection
-
-        HttpStream resultStream;
-        
-        //根据http版本不同创建HttpStream
-        
-        if (resultConnection.framedConnection != null) {
-        
-          resultStream = new Http2xStream(client, this, resultConnection.framedConnection);
-          
-        } else {
-        
-          resultStream = new Http1xStream(client, this, resultConnection.source, resultConnection.sink);
-        }
+      }
 
     }
-    
+
     3.找可用connection
     
-    private RealConnection findHealthyConnection(int connectTimeout, int readTimeout,
-    
-      int writeTimeout, boolean connectionRetryEnabled, boolean doExtensiveHealthChecks)｛
-      
-      while (true) {
-      
-        RealConnection candidate = findConnection(connectTimeout, readTimeout, writeTimeout,connectionRetryEnabled); 
-           
+      private RealConnection findHealthyConnection(int connectTimeout, int readTimeout,
+
+        int writeTimeout, boolean connectionRetryEnabled, boolean doExtensiveHealthChecks)｛
+
+        while (true) {
+
+          RealConnection candidate = findConnection(connectTimeout, readTimeout, writeTimeout,connectionRetryEnabled); 
+        
+        }
+        
         return candidate;
+     
       }
-    }
 
     4.
     
       private RealConnection findConnection(int connectTimeout, int readTimeout, int writeTimeout,
-          
-          boolean connectionRetryEnabled) throws IOException {
+
+        boolean connectionRetryEnabled) throws IOException {
 
           synchronized (connectionPool) {
 
-          // 线程池寻找可复用connection
-          RealConnection pooledConnection = Internal.instance.get(connectionPool, address, this);
-         
-         if (pooledConnection != null) {
+            // 线程池寻找可复用connection
+            RealConnection pooledConnection = Internal.instance.get(connectionPool, address, this);
 
-            return pooledConnection; //找到返回
-          
-          }
+            if (pooledConnection != null) {
 
-        }
+            return pooledConnection; //找到返回
 
-        RealConnection newConnection = new RealConnection(selectedRoute);//否则新建
-        
-        acquire(newConnection);//把RealConnection与StreamAllocation关联，一个StreamAllocation对应一个连接，但是connection可以被复用，所以一个connection可以对应多个StreamAllocation而且，一个StreamAllocation可以对应多个HttpStream，因为对于一个服务器的连接，会有多次请求
+            }
 
-        synchronized (connectionPool) {
-          
-          Internal.instance.put(connectionPool, newConnection);//放到连接池中
-        
-        }
+          }
 
-        newConnection.connect(connectTimeout, readTimeout, writeTimeout, address.connectionSpecs(),connectionRetryEnabled);
-        
+          RealConnection newConnection = new RealConnection(selectedRoute);//否则新建
+
+          acquire(newConnection);//把RealConnection与StreamAllocation关联，一个StreamAllocation对应一个连接，但是connection可以被复用，所以一个connection可以对应多个StreamAllocation而且，一个StreamAllocation可以对应多个HttpStream，因为对于一个服务器的连接，会有多次请求
+
+          synchronized (connectionPool) {
+
+            Internal.instance.put(connectionPool, newConnection);//放到连接池中
+
+          }
+
+          newConnection.connect(connectTimeout, readTimeout, writeTimeout,address.connectionSpecs(),connectionRetryEnabled);
 
         return newConnection;
-        
+
       }
-      
+
     5.newConnection.connect
       
       public void connect(int connectTimeout, int readTimeout, int writeTimeout,
-          List<ConnectionSpec> connectionSpecs, boolean connectionRetryEnabled) {
-        
-          buildConnection(connectTimeout, readTimeout, writeTimeout, connectionSpecSelector);
-            
+        List<ConnectionSpec> connectionSpecs, boolean connectionRetryEnabled) {
+
+        buildConnection(connectTimeout, readTimeout, writeTimeout, connectionSpecSelector);
+
       }
     
     6.
     
-    private void buildConnection(int connectTimeout, int readTimeout, int writeTimeout,
-      ConnectionSpecSelector connectionSpecSelector) throws IOException {
-      
-      connectSocket(connectTimeout, readTimeout);//连接socket
-      
-      establishProtocol(readTimeout, writeTimeout, connectionSpecSelector);
-    
-    }
+      private void buildConnection(int connectTimeout, int readTimeout, int writeTimeout,
+        ConnectionSpecSelector connectionSpecSelector) throws IOException {
+
+        connectSocket(connectTimeout, readTimeout);//连接socket
+
+        establishProtocol(readTimeout, writeTimeout, connectionSpecSelector);
+
+      }
     
     7.
     
-    private void connectSocket(int connectTimeout, int readTimeout) throws IOException {
-        
-      Platform.get().connectSocket(rawSocket, route.socketAddress(), connectTimeout);//socket连接＝＝socket.connect(address, connectTimeout);
-      
-      source = Okio.buffer(Okio.source(rawSocket));//read buffer
-      
-      sink = Okio.buffer(Okio.sink(rawSocket));//write buffer
-     
-    }
+      private void connectSocket(int connectTimeout, int readTimeout) throws IOException {
 
+        Platform.get().connectSocket(rawSocket, route.socketAddress(), connectTimeout);//socket连接＝＝socket.connect(address, connectTimeout);
 
-  
+        source = Okio.buffer(Okio.source(rawSocket));//read buffer
+
+        sink = Okio.buffer(Okio.sink(rawSocket));//write buffer
+
+      }
+
 # CallServerInterceptor 发送和接收拦截器
   
   1.发送请求并接收回复
   
-   @Override public Response intercept(Chain chain) throws IOException {
+    public Response intercept(Chain chain) throws IOException {
 
-    httpStream.writeRequestHeaders(request);//写请求头
+      httpStream.writeRequestHeaders(request);//写请求头
 
-    if (HttpMethod.permitsRequestBody(request.method()) && request.body() != null) {//写请求体
-      
-      Sink requestBodyOut = httpStream.createRequestBody(request, request.body().contentLength());
-      
-      BufferedSink bufferedRequestBody = Okio.buffer(requestBodyOut);
-      
-      request.body().writeTo(bufferedRequestBody);
-      
-      bufferedRequestBody.close();
-    
-    }
+      if (HttpMethod.permitsRequestBody(request.method()) && request.body() != null) {//写请求体
 
-    httpStream.finishRequest();
+          Sink requestBodyOut = httpStream.createRequestBody(request, request.body().contentLength());
 
-    Response response = httpStream.readResponseHeaders() //读响应头
-        
-        .request(request)
-        
-        .handshake(streamAllocation.connection().handshake())
-        
-        .sentRequestAtMillis(sentRequestMillis)
-        
-        .receivedResponseAtMillis(System.currentTimeMillis())
-        
+          BufferedSink bufferedRequestBody = Okio.buffer(requestBodyOut);
+
+          request.body().writeTo(bufferedRequestBody);
+
+          bufferedRequestBody.close();
+
+      }
+
+      httpStream.finishRequest();
+
+      Response response = httpStream.readResponseHeaders() //读响应头
+
+      .request(request)
+
+      .handshake(streamAllocation.connection().handshake())
+
+      .sentRequestAtMillis(sentRequestMillis)
+
+      .receivedResponseAtMillis(System.currentTimeMillis())
+
+      .build();
+
+      if (!forWebSocket || response.code() != 101) {
+
+        response = response.newBuilder()//读响应体
+
+        .body(httpStream.openResponseBody(response))
+
         .build();
+      }
 
-    if (!forWebSocket || response.code() != 101) {
-      
-      response = response.newBuilder()//读响应体
-          
-          .body(httpStream.openResponseBody(response))
-          
-          .build();
+      return response;
+
     }
-    
-    return response;
-  
-  }
 
     
     
