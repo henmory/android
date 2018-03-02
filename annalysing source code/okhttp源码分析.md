@@ -244,6 +244,24 @@
       
       可以看成是一个传球手，负责把生产者线程处理的数据直接传递给消费者线程，也就是说有了任务就马上交给消费者消费
       
+   2.结合readyAsyncCalls和runningAsyncCalls，当来一个任务的时候，通过Dispathcer的
+   
+   synchronized void enqueue(AsyncCall call) {
+    
+    if (runningAsyncCalls.size() < maxRequests && runningCallsForHost(call) < maxRequestsPerHost) {
+      
+      runningAsyncCalls.add(call);//添加到运行队列中
+    
+      executorService().execute(call);
+   
+   } else {
+      
+      readyAsyncCalls.add(call);//添加到等待队列中
+   
+    }
+  
+  }
+      
   ## RealInterceptorChain类详解
     
     1.拦截器链，里面含有所有拦截器所有请求，最后调用call拦截器完成网络的收发
